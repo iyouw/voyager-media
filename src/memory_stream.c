@@ -35,11 +35,13 @@ uint8_t *get_memory_stream_position_ptr(MemoryStream *const memory_stream)
 
 uint8_t *ensure_memory_stream_write(MemoryStream *const memory_stream, size_t write_length)
 {
-  size_t free = get_free_of_memory_stream(memory_stream);
-  if ((free + memory_stream->position) >= write_length)
+  if(memory_stream->position > 0)
   {
     collect_memory_stream(memory_stream);
-  } else {
+  }
+  size_t free = get_free_of_memory_stream(memory_stream);
+  if ((free + memory_stream->position) < write_length)
+  {
     resize_memory_stream(memory_stream, write_length);
   }
   return memory_stream->data + memory_stream->position;

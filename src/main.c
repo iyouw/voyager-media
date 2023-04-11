@@ -42,11 +42,12 @@ int main(int argc, char *argv[])
   const size_t sz = size - 200;
   uint8_t *buffer2 = malloc(sz);
 
+  fseek(is, 0, SEEK_SET);
   fread(buffer, sizeof(uint8_t), sizeof(buffer), is);
   write_memory_stream(ms, buffer, 200);
 
   size_t rds = 0;
-  while ((rds = read_memory_stream(ms, read_buffer, 100) > 0))
+  while ((rds = read_memory_stream(ms, read_buffer, 100)) > 0)
   {
     fwrite(read_buffer, sizeof(uint8_t), rds, os);
   }
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
   fread(buffer2, sizeof(uint8_t), sz, is);
   write_memory_stream(ms, buffer2, sz);
 
-  while ((rds = read_memory_stream(ms, read_buffer, 100) > 0))
+  while ((rds = read_memory_stream(ms, read_buffer, 100)) > 0)
   {
     fwrite(read_buffer, sizeof(uint8_t), rds, os);
   }

@@ -20,6 +20,6 @@ git add .gitatrributes
 
 3. configure your git for `GnuTLS recv error (-110): The TLS connection was non-properly terminated`
 
-```base
+```bash
 git config --global http.postBuffer 1048576000
 ```

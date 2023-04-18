@@ -1,2 +1,4 @@
 build
 **/*.o
+main
+demux_decode

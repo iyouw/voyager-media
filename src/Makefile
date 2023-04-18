@@ -36,4 +36,4 @@ memory_stream.o:memory_stream.c
 demux_decode: demux_decode.c memory_stream.c
 	$(CC) -I$(INCLUDE) $(CFLAGS) -o demux_decode demux_decode.c memory_stream.c -L../lib -lavdevice -lavfilter -lavformat -lavcodec -lswresample -lswscale -lavutil -pthread -lm -latomic
 clean:
-	-rm -f main demux_decode *.o 
+	-rm -f main demux_decode *.o *.wasm

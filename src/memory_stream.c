@@ -28,9 +28,14 @@ size_t get_available_of_memory_stream(MemoryStream *const memory_stream)
   return memory_stream->length - memory_stream->position;
 }
 
-uint8_t *get_memory_stream_position_ptr(MemoryStream *const memory_stream)
+uint8_t *get_memory_stream_read_position_ptr(MemoryStream *const memory_stream)
 {
   return memory_stream->data + memory_stream->position;
+}
+
+uint8_t *get_memory_stream_write_position_ptr(MemoryStream *const memory_stream) 
+{
+  return memory_stream->data + memory_stream->length;
 }
 
 uint8_t *ensure_memory_stream_write(MemoryStream *const memory_stream, size_t write_length)
@@ -51,7 +56,7 @@ void collect_memory_stream(MemoryStream *const memory_stream)
 {
   size_t size = memory_stream->length - memory_stream->position;
   if (size > 0) {
-    uint8_t *src = get_memory_stream_position_ptr(memory_stream);
+    uint8_t *src = get_memory_stream_read_position_ptr(memory_stream);
     memmove(memory_stream->data, src, size);
   }
   memory_stream->length -= memory_stream->position;
@@ -72,7 +77,7 @@ size_t read_memory_stream(MemoryStream *const memory_stream, uint8_t *buf, size_
   int size = V_MIN(get_available_of_memory_stream(memory_stream), buf_size);
   if (size > 0)
   {
-    uint8_t *src = get_memory_stream_position_ptr(memory_stream);
+    uint8_t *src = get_memory_stream_read_position_ptr(memory_stream);
     memcpy(buf, src, size);
     memory_stream->position += size;
   }
@@ -82,7 +87,7 @@ size_t read_memory_stream(MemoryStream *const memory_stream, uint8_t *buf, size_
 size_t write_memory_stream(MemoryStream *const memory_stream, const uint8_t *buf, size_t buf_size)
 {
   ensure_memory_stream_write(memory_stream, buf_size);
-  uint8_t *dest = get_memory_stream_position_ptr(memory_stream);
+  uint8_t *dest = get_memory_stream_write_position_ptr(memory_stream);
   memcpy(dest, buf, buf_size);
   memory_stream_did_write(memory_stream, buf_size);
   return buf_size;
@@ -91,6 +96,4 @@ size_t write_memory_stream(MemoryStream *const memory_stream, const uint8_t *buf
 void memory_stream_did_write(MemoryStream *const memory_stream, size_t write_length)
 {
   memory_stream->length = V_MIN(memory_stream->capacity, memory_stream->length + write_length);
-} 
-
-
+}

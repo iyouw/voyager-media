@@ -28,7 +28,9 @@ size_t get_free_of_memory_stream(MemoryStream *const memory_stream);
 
 size_t get_available_of_memory_stream(MemoryStream *const memory_stream);
 
-uint8_t *get_memory_stream_position_ptr(MemoryStream *const memory_stream);
+uint8_t *get_memory_stream_read_position_ptr(MemoryStream *const memory_stream);
+
+uint8_t *get_memory_stream_write_position_prt(MemoryStream *const memory_stream);
 
 uint8_t *ensure_memory_stream_write(MemoryStream *const memory_stream, size_t write_length);
 

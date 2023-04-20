@@ -1,13 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "memory_stream.h"
+
+typedef enum { TRUE, FALSE } Boolean;
+
+typedef struct 
+{
+  const char *fileName;
+  struct MemoryStream *const ms;
+} MemoryContext;
+
+Boolean isDone = FALSE;
+pthread_mutex_t mutex;
 
 int main(int argc, char *argv[])
 {
   if (argc != 3)
   {
     fprintf(stderr, "usage %s input file output file\n", argv[0]);
-    return -1;
+    exit(EXIT_FAILURE);
   }
 
   int ret = 0;

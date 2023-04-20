@@ -1,5 +1,12 @@
 all:main
 
+# VPATH variable
+# VPATH = src
+
+# vpath directive
+vpath %.c src
+vpath %.h src
+
 # which compiler
 CC = cc
 

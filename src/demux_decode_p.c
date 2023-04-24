@@ -1,5 +1,5 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
 
 #include <libavutil/avutil.h>
@@ -190,7 +190,23 @@ static int decode_packet(AVPacket *pkt, AVCodecContext *ctx)
   while(ret >= 0)
   {
     ret = avcodec_receive_frame(ctx, frame);
+    if (ret < 0)
+    {
+      if (ret == AVERROR_EFO || ret == AVERROR(EAGAIN)) return 0;
+      fprint(stderr, "error during decoding (%s)\n", av_err2str(ret));
+      return ret;
+    }
+    if (ctx->codec->type == AVMEDIA_TYPE_VIDEO)
+    { 
+    }
+    else 
+    {
+
+    }
+    av_frame_unref(frame);
+    if (ret < 0) return ret;
   }
+  return 0;
 } 
 
 int main(int argc, char *argv[])

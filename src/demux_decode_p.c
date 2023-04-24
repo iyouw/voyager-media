@@ -180,8 +180,15 @@ static int open_decoder(AVStream *stream, enum AVMediaType type)
 
 static int decode_packet(AVPacket *pkt, enum AVMediaType type)
 {
-
-}
+  int ret = 0;
+  AVCodecContext *ctx = type == AVMEDIA_TYPE_VIDEO ? video_dec_ctx : audio_dec_ctx;
+  ret = avcodec_send_packet(dec,pkt);
+  if (return < 0)
+  {
+    fprintf(stderr, "Error submitting packet");
+    return ret;
+  }
+} 
 
 int main(int argc, char *argv[])
 {

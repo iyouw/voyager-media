@@ -9,5 +9,8 @@ avio:
 demux_decode:
 	$(MAKE) $@ --directory=$(SRC)
 
+demux_decode_p:
+	$(MAKE) $@ --directory=$(SRC)
+
 clean:
 	${MAKE} $@ --directory=$(SRC)

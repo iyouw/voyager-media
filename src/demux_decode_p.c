@@ -25,7 +25,7 @@ static AVFormatContext *fmt_ctx = NULL;
 static AVCodecContext *video_dec_ctx = NULL;
 static AVCodecContext *audio_dec_ctx = NULL;
 
-static int video_stream_idx = -1; 
+static int video_stream_idx = -1;
 static int audio_stream_idx = -1;
 
 static AVPacket *pkt = NULL;
@@ -162,7 +162,7 @@ static int demux_thread()
   {
     if (pkt->stream_index == video_stream->index)
     {
-      ret = decode_packet(pkt, AVMEDIA_TYPE_VIDEO);
+      ret = decode_packet(pkt, video_dec_ctx);
     } else if (pkt->stream_index == audio_stream->index) {
       ret = decode_packet(pkt, AVMEDIA_TYPE_AUDIO);
     }
@@ -178,15 +178,18 @@ static int open_decoder(AVStream *stream, enum AVMediaType type)
 
 }
 
-static int decode_packet(AVPacket *pkt, enum AVMediaType type)
+static int decode_packet(AVPacket *pkt, AVCodecContext *ctx)
 {
   int ret = 0;
-  AVCodecContext *ctx = type == AVMEDIA_TYPE_VIDEO ? video_dec_ctx : audio_dec_ctx;
   ret = avcodec_send_packet(dec,pkt);
-  if (return < 0)
+  if (ret < 0)
   {
     fprintf(stderr, "Error submitting packet");
     return ret;
+  }
+  while(ret >= 0)
+  {
+    ret = avcodec_receive_frame(ctx, frame);
   }
 } 
 

@@ -4,3 +4,4 @@ lib
 main
 demux_decode
 *.mp4
+result/*

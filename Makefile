@@ -1,13 +1,13 @@
-src := src
-
-.PHONY: main demux_decode
+SRC:= src
 
 main:
-	$(MAKE) main --directory=$(src)
+	$(MAKE) $@ --directory=$(SRC)
 
+avio:
+	${MAKE} $@ --directory=$(SRC)
 
 demux_decode:
-	${MAKE} demux_decode --directory=$(src)
+	$(MAKE) $@ --directory=$(SRC)
 
 clean:
-	${MAKE} clean --directory=$(src)
+	${MAKE} $@ --directory=$(SRC)

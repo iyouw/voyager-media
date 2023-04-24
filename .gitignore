@@ -3,3 +3,4 @@ lib
 **/*.o
 main
 demux_decode
+*.mp4

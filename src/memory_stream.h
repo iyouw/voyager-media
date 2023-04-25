@@ -42,6 +42,8 @@ size_t read_memory_stream(MemoryStream *const memory_stream, uint8_t *buf, size_
 
 size_t write_memory_stream(MemoryStream *const memory_stream, const uint8_t *buf, size_t buf_size);
 
+int64_t seek_memory_stream(MemoryStream *const memory_stream, int64_t offset, int whence);
+
 void memory_stream_did_write(MemoryStream *memory_stream, size_t write_length);
 
 #endif

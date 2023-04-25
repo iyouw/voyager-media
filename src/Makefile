@@ -50,6 +50,9 @@ avio: avio.c memory_stream.c memory_stream.h
 # avio: avio.c memory_stream.c memory_stream.h
 # 	$(CC) -I$(INCLUDE) $(FLAGS) -o $@ avio.c memory_stream.c $(LDLIBS)
 
+avio_r: avio_r.c
+	$(CC) -I$(INCLUDE) $(CFLAGS) -o $@ $^ $(FLIBS)
+
 demux_decode: demux_decode.c
 	$(CC) -I$(INCLUDE) $(CFLAGS) -o $@ $^ $(FLIBS)
 
@@ -57,4 +60,4 @@ demux_decode_p: demux_decode_p.c memory_stream.c memory_stream.h
 	$(CC) -I$(INCLUDE) $(CFLAGS) -o $@ demux_decode_p.c memory_stream.c $(FLIBS)
 
 clean:
-	-rm -f main avio demux_decode *.o *.wasm
+	-rm -f main avio avio_r demux_decode demux_decode_p *.o *.wasm

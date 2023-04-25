@@ -6,6 +6,9 @@ main:
 avio:
 	${MAKE} $@ --directory=$(SRC)
 
+avio_r:
+	${MAKE} $@ --directory=$(SRC)
+
 demux_decode:
 	$(MAKE) $@ --directory=$(SRC)
 

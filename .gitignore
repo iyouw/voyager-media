@@ -3,5 +3,6 @@ lib
 **/*.o
 main
 demux_decode
+demux_decode_p
 *.mp4
 result/*

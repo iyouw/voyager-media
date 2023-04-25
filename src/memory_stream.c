@@ -1,5 +1,6 @@
-#include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include "memory_stream.h"
 
@@ -91,6 +92,30 @@ size_t write_memory_stream(MemoryStream *const memory_stream, const uint8_t *buf
   memcpy(dest, buf, buf_size);
   memory_stream_did_write(memory_stream, buf_size);
   return buf_size;
+}
+
+long seek_memory_stream(MemoryStream *const memory_stream, long offset, int whence)
+{
+  int ret = -1;
+  long pos = -1;
+  if (SEEK_SET == whence)
+  {
+    pos = offset - memory_stream->recycle_length;
+  }
+  else if (SEEK_CUR == whence)
+  {
+    pos = memory_stream->position + offset;
+  }
+  else if (SEEK_END == whence)
+  {
+    pos = memory_stream->length - offset;
+  }
+  if (pos >=0 && pos <= memory_stream->length)
+  {
+    memory_stream->position = pos;
+    ret = offset;
+  }
+  return ret;
 }
 
 void memory_stream_did_write(MemoryStream *const memory_stream, size_t write_length)

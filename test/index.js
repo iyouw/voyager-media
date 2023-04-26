@@ -1,5 +1,5 @@
-const { appendFileSync } = require("fs");
-const { readFile } = require("fs/promises");
+const { appendFileSync, readFileSync, readSync, openSync } = require("fs");
+const { readFile, open } = require("fs/promises");
 const ffmpeg = require("../src/trancode.js");
 
 
@@ -7,17 +7,26 @@ const input_file = "../data/xgplayer-demo-720p.mp4"
 const video_output_file = "../result/xgplayer-demo-720p-video";
 const audio_output_file = "../result/xgplayer-demo-720p-audio";
 
-ffmpeg().then(async (instance)=>{
+ffmpeg().then((instance)=>{
   let ret = 0;
   // show hello
   instance._hello_wasm();
   // prepare data
-  const inputData = await readFile(input_file);
-  const buffer = new Uint8Array(inputData);
+  // const inputData = await readFile(input_file);
+  // const buffer = new Uint8Array(inputData);
   instance._open_store();
-  const pos = instance._ensure_store_write_capacity(buffer.length);
-  instance.writeArrayToMemory(buffer, pos);
-  instance._did_write_store(buffer.length);
+  const fd =  openSync(input_file);
+  const rBuffer = new Uint8Array(1024);
+  setTimeout(()=>{
+    const bytesReads = readSync(fd, rBuffer);
+    const b = rBuffer.subarray(0, bytesReads);
+    const pos = instance._ensure_store_write_capacity(b.length);
+    instance.writeArrayToMemory(b, pos);
+    instance._did_write_store(b.length);
+  }, 1000);
+  // const pos = instance._ensure_store_write_capacity(buffer.length);
+  // instance.writeArrayToMemory(buffer, pos);
+  // instance._did_write_store(buffer.length);
   let vf = 0;
   let af = 0;
   // prepare demux && decode

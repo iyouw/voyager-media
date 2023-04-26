@@ -1,0 +1,28 @@
+{
+  "name": "voyager-media",
+  "private": true,
+  "version": "1.0.0",
+  "description": "exploring to add light weight library for space media player base on ffmpeg. thus, we can compile the leight weight library to wasm format.  which will improve to support wide range of media format, media codec and professional media filter effects in the web browser. in addition to this, we still have the flexible of tuning the performance of the light weight library.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iyouw/voyager-media.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/iyouw/voyager-media/issues"
+  },
+  "homepage": "https://github.com/iyouw/voyager-media#readme",
+  "devDependencies": {
+    "@types/node": "^18.16.1"
+  }
+}

@@ -30,7 +30,7 @@ size_t get_available_of_memory_stream(MemoryStream *const memory_stream);
 
 uint8_t *get_memory_stream_read_position_ptr(MemoryStream *const memory_stream);
 
-uint8_t *get_memory_stream_write_position_prt(MemoryStream *const memory_stream);
+uint8_t *get_memory_stream_write_position_ptr(MemoryStream *const memory_stream);
 
 uint8_t *ensure_memory_stream_write(MemoryStream *const memory_stream, size_t write_length);
 
@@ -42,7 +42,7 @@ size_t read_memory_stream(MemoryStream *const memory_stream, uint8_t *buf, size_
 
 size_t write_memory_stream(MemoryStream *const memory_stream, const uint8_t *buf, size_t buf_size);
 
-int64_t seek_memory_stream(MemoryStream *const memory_stream, int64_t offset, int whence);
+long seek_memory_stream(MemoryStream *const memory_stream, long offset, int whence);
 
 void memory_stream_did_write(MemoryStream *memory_stream, size_t write_length);
 

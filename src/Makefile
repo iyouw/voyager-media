@@ -35,6 +35,28 @@ FLIBS += -lswresample -lm -latomic
 FLIBS += -lswscale -lm -latomic
 FLIBS += -lavutil -pthread -lm -latomic
 
+# emcc
+
+EMCC = emcc
+
+EMCC_INCLUDE += -I.
+EMCC_INCLUDE += -I/usr/local/include
+
+# EMCC_CFALGS += -g
+EMCC_CFALGS += -sMODULARIZE
+# EMCC_CFALGS += -sALLOW_MEMORY_GROWTH
+EMCC_CFALGS += -sALLOW_TABLE_GROWTH
+EMCC_CFALGS += -s INITIAL_MEMORY=33554432
+EMCC_CFALGS += -s USE_PTHREADS
+EMCC_CFALGS += -sEXPORT_NAME=ffm
+EMCC_CFALGS += -sEXPORTED_RUNTIME_METHODS=addFunction,UTF8ToString,stringToUTF8,writeArrayToMemory
+
+EMCC_LDFLAGS += -L../lib_wasm
+EMCC_LDFLAGS += -lavformat
+EMCC_LDFLAGS += -lavcodec
+EMCC_LDFLAGS += -lavutil
+EMCC_LDFLAGS += -lswresample
+
 main: main.o memory_stream.o
 	$(CC) -o $@ $^ -lm -lpthread
 
@@ -59,5 +81,8 @@ demux_decode: demux_decode.c
 demux_decode_p: demux_decode_p.c memory_stream.c memory_stream.h
 	$(CC) -I$(INCLUDE) $(CFLAGS) -o $@ demux_decode_p.c memory_stream.c $(FLIBS)
 
+transcode: transcode.c memory_stream.c memory_stream.h
+	$(EMCC) $(EMCC_INCLUDE) $(EMCC_CFALGS) -o trancode.js transcode.c memory_stream.c $(EMCC_LDFLAGS)
+
 clean:
-	-rm -f main avio avio_r demux_decode demux_decode_p *.o *.wasm
+	-rm -f main avio avio_r demux_decode demux_decode_p *.o *.wasm *.js

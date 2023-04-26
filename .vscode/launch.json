@@ -5,6 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "wasm",
+            "program": "${file}",
+            "request": "launch",
+            "cwd": "${fileDirname}",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
             "name": "demux_decode_p",
             "type": "cppdbg",
             "request": "launch",

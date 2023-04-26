@@ -1,5 +1,7 @@
+node_modules
 build
 lib
+lib_wasm
 **/*.o
 main
 demux_decode

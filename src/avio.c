@@ -14,7 +14,6 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size)
 {
     MemoryStream *const ms = (MemoryStream *const)opaque;
     buf_size = FFMIN(buf_size, get_available_of_memory_stream(ms));
-
     if (!buf_size)
         return AVERROR_EOF;
     printf("ptr:%p size:%zu\n", ms->data, ms->length);

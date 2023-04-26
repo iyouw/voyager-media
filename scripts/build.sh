@@ -64,12 +64,13 @@ ARGS=(
     -Llibswscale
     -Llibswresample
     -Qunused-arguments
-    -o wasm/dist/ffmpeg.js "${FFMPEG_SRC}"
+    -o wasm/dist/ffmpeg.js fftools/ffmpeg_dec.c fftools/ffmpeg_demux.c
+    fftools/ffmpeg_enc.c fftools/ffmpeg_filter.c fftools/ffmpeg_hw.c  fftools/ffmpeg_mux.c 
+    fftools/ffmpeg_mux_init.c fftools/ffmpeg_opt.c fftools/objpool.c fftools/sync_queue.c 
+    fftools/thread_queue.c fftools/cmdutils.c fftools/opt_common.c fftools/ffmpeg.c
     -l avdevice -lavfilter -lavformat -lavcodec -lswresample -lswscale -lavutil -lm
     -s USE_SDL=2                    # use SDL2
     -s USE_PTHREADS=1               # enable pthreads support
     -s INITIAL_MEMORY=33554432      # 33554432 bytes = 32 MB
 )
 emcc "${ARGS[@]}"
-
-

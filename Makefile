@@ -15,5 +15,8 @@ demux_decode:
 demux_decode_p:
 	$(MAKE) $@ --directory=$(SRC)
 
+transcode:
+	$(MAKE) $@ --directory=$(SRC)
+
 clean:
 	${MAKE} $@ --directory=$(SRC)

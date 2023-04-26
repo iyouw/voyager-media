@@ -25,6 +25,9 @@ static AVPacket *pkt = NULL;
 static int video_frame_count = 0;
 static int audio_frame_count = 0;
 
+void (*packet_handler)(int stream_index);
+
+
 // output video frame
 static int output_video_frame(AVFrame *frame)
 {

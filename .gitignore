@@ -8,3 +8,5 @@ demux_decode
 demux_decode_p
 *.mp4
 result/*
+src/*.js
+src/*.wasm

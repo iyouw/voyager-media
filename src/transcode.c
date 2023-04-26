@@ -46,7 +46,7 @@ void hello_wasm()
 }
 
 /*************************************************/
-/*** store section ******************************/
+/*** store section *******************************/
 /*************************************************/ 
 // store api
 EMSCRIPTEN_KEEPALIVE
@@ -183,6 +183,8 @@ int open_demuxer(StreamSelectedCallback on_stream_selected, PacketParsedCallback
     while(av_read_frame(fmt_ctx, pkt) >=0)
     {
         (*on_packet_parsed)(pkt->stream_index);
+        // release packet
+        av_packet_unref(pkt);
     }
 
     return 0;
@@ -247,13 +249,13 @@ static void output_video_frame(AVFrame *frame, OutputVideoFrameCallback on_outpu
         frame->format, 
         frame->width,
         frame->height);
-    on_output_video_frame(video_dst_data[0], video_dst_bufsize);
+    (*on_output_video_frame)(video_dst_data[0], video_dst_bufsize);
 }
 
 static void output_audio_frame(AVFrame *frame, OutputAudioFrameCallback on_output_audio_frame)
 {
     size_t unpadded_linesize = frame->nb_samples * av_get_bytes_per_sample(frame->format);
-    on_output_audio_frame(frame->extended_data[0], unpadded_linesize);
+    (*on_output_audio_frame)(frame->extended_data[0], unpadded_linesize);
 }
 
 // decode api
@@ -327,6 +329,8 @@ int decode(int stream_index, OutputVideoFrameCallback on_output_video_frame, Out
         {
             output_audio_frame(frame, on_output_audio_frame);
         }
+        // release frame
+        av_frame_unref(frame);
     }
 
     return 0;

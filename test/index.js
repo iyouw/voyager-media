@@ -25,14 +25,14 @@ ffmpeg().then(async (instance)=>{
     console.log(`video_frames:${vf++},size:${size}`);
     const view = instance.HEAPU8;
     const buffer = view.subarray(pos, pos + size);
-    appendFileSync(video_output_file, Buffer.from(buffer.buffer));
+    appendFileSync(video_output_file, buffer);
   }
 
   const onOutputAudioFrame = (pos, size) => {
     console.log(`audio_frames:${af++},size:${size}`);
     const view = instance.HEAPU8;
     const buffer = view.subarray(pos, pos + size);
-    appendFileSync(audio_output_file, Buffer.from(buffer.buffer));
+    appendFileSync(audio_output_file, buffer);
   }
 
   const onOutputVideoFrameCallback = instance.addFunction(onOutputVideoFrame, 'vii');

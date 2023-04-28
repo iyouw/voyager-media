@@ -18,31 +18,32 @@ typedef struct MemoryStream
   size_t length;
   size_t capacity;
   size_t recycle_length;
+  int is_stream;
 } MemoryStream;
 
-MemoryStream *create_memory_stream(size_t capacity);
+int create_memory_stream(MemoryStream **memory_stream, size_t capacity, int is_stream);
 
-void free_memory_stream(MemoryStream *const memory_stream);
+void free_memory_stream(MemoryStream *memory_stream);
 
-size_t get_free_of_memory_stream(MemoryStream *const memory_stream);
+size_t get_free_of_memory_stream(MemoryStream *memory_stream);
 
-size_t get_available_of_memory_stream(MemoryStream *const memory_stream);
+size_t get_available_of_memory_stream(MemoryStream *memory_stream);
 
-uint8_t *get_memory_stream_read_position_ptr(MemoryStream *const memory_stream);
+uint8_t *get_memory_stream_read_position_ptr(MemoryStream *memory_stream);
 
-uint8_t *get_memory_stream_write_position_ptr(MemoryStream *const memory_stream);
+uint8_t *get_memory_stream_write_position_ptr(MemoryStream *memory_stream);
 
-uint8_t *ensure_memory_stream_write(MemoryStream *const memory_stream, size_t write_length);
+uint8_t *ensure_memory_stream_write(MemoryStream *memory_stream, size_t write_length);
 
-void collect_memory_stream(MemoryStream *const memory_stream);
+void collect_memory_stream(MemoryStream *memory_stream);
 
-void resize_memory_stream(MemoryStream *const memory_stream, size_t size);
+void resize_memory_stream(MemoryStream *memory_stream, size_t size);
 
-size_t read_memory_stream(MemoryStream *const memory_stream, uint8_t *buf, size_t buf_size);
+size_t read_memory_stream(MemoryStream *memory_stream, uint8_t *buf, size_t buf_size);
 
-size_t write_memory_stream(MemoryStream *const memory_stream, const uint8_t *buf, size_t buf_size);
+size_t write_memory_stream(MemoryStream *memory_stream, const uint8_t *buf, size_t buf_size);
 
-long seek_memory_stream(MemoryStream *const memory_stream, long offset, int whence);
+long seek_memory_stream(MemoryStream *memory_stream, long offset, int whence);
 
 void memory_stream_did_write(MemoryStream *memory_stream, size_t write_length);
 

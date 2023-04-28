@@ -49,8 +49,9 @@ int main(int argc, char *argv[])
     /* fill opaque structure used by the AVIOContext read callback */
     bd.ptr  = buffer;
     bd.size = buffer_size;
+    MemoryStream *ms;
 
-    MemoryStream *const ms = create_memory_stream(bd.size);
+    create_memory_stream(&ms, bd.size);
     write_memory_stream(ms, bd.ptr, bd.size);
 
     if (!(fmt_ctx = avformat_alloc_context())) {

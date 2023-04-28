@@ -11,6 +11,7 @@
 #include "memory_stream.h"
 
 #define IO_BUFFER_SIZE 4096
+#define STORE_SIZE (MEMORY_PAGE * 10)
 
 // store
 static MemoryStream *store = NULL;
@@ -50,9 +51,9 @@ void hello_wasm()
 /*************************************************/ 
 // store api
 EMSCRIPTEN_KEEPALIVE
-void open_store()
+int open_store()
 {
-    store = create_memory_stream(MEMORY_PAGE * 10);
+    return create_memory_stream(&store, STORE_SIZE, 0);
 }
 
 EMSCRIPTEN_KEEPALIVE

@@ -92,8 +92,11 @@ int main(int argc, char *argv[])
   int ret = 0;
   const char *in = argv[1];
   const char *out = argv[2];
-  MemoryStream *ms = create_memory_stream(1024);
-
+  MemoryStream *ms;
+  if((ret = create_memory_stream(&ms, 1024)) != 0)
+  {
+    goto fail;
+  }
   ret = pthread_mutex_init(&mutex, NULL);
   if (ret != 0) {
     perror("init mutex failed!");

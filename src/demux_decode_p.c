@@ -197,7 +197,8 @@ static int read_io(void *opaque, uint8_t *buffer, int buffer_size)
 static int64_t seek_io(void *opaque, int64_t offset, int whence)
 {
   MemoryStream *memory_stream = (MemoryStream *)opaque;
-  return seek_memory_stream(memory_stream, offset, whence);
+  int ret = seek_memory_stream(memory_stream, offset, whence);
+  return ret;
 }
 
 static int demux_thread()
@@ -381,7 +382,7 @@ int main(int argc, char *argv[])
   video_dst_file_name = argv[2];
   audio_dst_file_name = argv[3];
 
-  memory_stream = create_memory_stream(1024);
+  create_memory_stream(&memory_stream, 1024, 0);
   if (memory_stream == NULL)
   {
     fprintf(stderr, "Could not allocate memory_stream\n");

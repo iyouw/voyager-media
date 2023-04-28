@@ -2,15 +2,26 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <errno.h>
 #include "memory_stream.h"
 
-MemoryStream *create_memory_stream(size_t capacity)
+int create_memory_stream(MemoryStream **memory_stream, size_t capacity, int is_stream)
 {
-  MemoryStream *res = (MemoryStream *)malloc(sizeof(MemoryStream));
-  memset(res, 0, sizeof(MemoryStream));
-  res->capacity = capacity;
-  res->data = (uint8_t *)malloc(capacity);
-  return res;
+  MemoryStream *ms;
+  if (!(ms = malloc(sizeof(MemoryStream))))
+  {
+    return errno;
+  }
+  memset(ms, 0, sizeof(MemoryStream));
+  
+  if (!(ms->data = malloc(capacity)))
+  {
+    return errno;
+  }
+  ms->capacity = capacity;
+  ms->is_stream = is_stream;
+  *memory_stream = ms;
+  return 0;
 }
 
 void free_memory_stream(MemoryStream *const memory_stream)
@@ -41,7 +52,7 @@ uint8_t *get_memory_stream_write_position_ptr(MemoryStream *const memory_stream)
 
 uint8_t *ensure_memory_stream_write(MemoryStream *const memory_stream, size_t write_length)
 {
-  if(memory_stream->position > 0)
+  if(memory_stream->position > 0 && memory_stream->is_stream)
   {
     collect_memory_stream(memory_stream);
   }

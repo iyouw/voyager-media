@@ -81,8 +81,14 @@ demux_decode: demux_decode.c
 demux_decode_p: demux_decode_p.c memory_stream.c memory_stream.h
 	$(CC) -I$(INCLUDE) $(CFLAGS) -o $@ demux_decode_p.c memory_stream.c $(FLIBS)
 
+demux_decode_w_r: demux_decode_w_r.c memory_stream.c memory_stream.h
+	$(CC) -I$(INCLUDE) $(CFLAGS) -o $@ demux_decode_w_r.c memory_stream.c $(FLIBS)
+
 transcode: transcode.c memory_stream.c memory_stream.h
 	$(EMCC) $(EMCC_INCLUDE) $(EMCC_CFALGS) -o trancode.js transcode.c memory_stream.c $(EMCC_LDFLAGS)
 
+demux_decode_w: demux_decode_w.c memory_stream.c memory_stream.h
+	$(EMCC) $(EMCC_INCLUDE) $(EMCC_CFALGS) -o demux_decode_w.js demux_decode_w.c memory_stream.c $(EMCC_LDFLAGS)
+
 clean:
-	-rm -f main avio avio_r demux_decode demux_decode_p *.o *.wasm *.js
+	-rm -f main avio avio_r demux_decode demux_decode_p demux_decode_w demux_decode_w_r *.o *.wasm *.js

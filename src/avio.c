@@ -13,13 +13,13 @@ struct buffer_data {
 static int read_packet(void *opaque, uint8_t *buf, int buf_size)
 {
     MemoryStream *const ms = (MemoryStream *const)opaque;
-    buf_size = FFMIN(buf_size, get_available_of_memory_stream(ms));
+    buf_size = FFMIN(buf_size, memory_stream_get_available(ms));
     if (!buf_size)
         return AVERROR_EOF;
     printf("ptr:%p size:%zu\n", ms->data, ms->length);
 
     /* copy internal buffer data to buf */
-    read_memory_stream(ms, buf, buf_size);
+    memory_stream_read(ms, buf, buf_size);
     return buf_size;
 }
 
@@ -51,8 +51,8 @@ int main(int argc, char *argv[])
     bd.size = buffer_size;
     MemoryStream *ms;
 
-    create_memory_stream(&ms, bd.size);
-    write_memory_stream(ms, bd.ptr, bd.size);
+    memory_stream_create(&ms, bd.size, FALSE);
+    memory_stream_write(ms, bd.ptr, bd.size);
 
     if (!(fmt_ctx = avformat_alloc_context())) {
         ret = AVERROR(ENOMEM);

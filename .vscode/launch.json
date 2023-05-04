@@ -15,7 +15,17 @@
             "type": "node"
         },
         {
-            "name": "wasm",
+            "name": "transcode_test",
+            "program": "${file}",
+            "request": "launch",
+            "cwd": "${fileDirname}",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
+            "name": "dd_test",
             "program": "${file}",
             "request": "launch",
             "cwd": "${fileDirname}",

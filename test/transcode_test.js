@@ -15,9 +15,14 @@ ffmpeg().then(async (instance)=>{
   instance._open_store();
   const inputData = await readFile(input_file);
   const buffer = new Uint8Array(inputData);
-  const pos = instance._ensure_store_write_capacity(buffer.length);
-  instance.writeArrayToMemory(buffer, pos);
-  instance._did_write_store(buffer.length);
+  const onWriteStore = (opaque, pos, length) => {
+    instance.writeArrayToMemory(buffer, pos);
+  }
+  const onWriteStoreCallback = instance.addFunction(onWriteStore, 'viii');
+  instance._write_store(buffer.length, onWriteStoreCallback);
+  // const pos = instance._ensure_store_write_capacity(buffer.length);
+  // instance.writeArrayToMemory(buffer, pos);
+  // instance._did_write_store(buffer.length);
   let vf = 0;
   let af = 0;
   // prepare demux && decode

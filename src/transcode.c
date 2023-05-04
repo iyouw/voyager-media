@@ -53,25 +53,22 @@ void hello_wasm()
 EMSCRIPTEN_KEEPALIVE
 int open_store()
 {
-    return create_memory_stream(&store, STORE_SIZE, 0);
-}
-
-EMSCRIPTEN_KEEPALIVE
-uint8_t *ensure_store_write_capacity(size_t length)
-{
-    ensure_memory_stream_write(store, length);
-    return get_memory_stream_write_position_ptr(store);
+    return memory_stream_create(&store, STORE_SIZE, 0);
 }
 EMSCRIPTEN_KEEPALIVE
-void did_write_store(size_t length)
+int write_store(size_t length, MemoryStreamWriteCallback write_callback)
 {
+    memory_stream_ensure_write(store, length);
+    uint8_t *ptr = memory_stream_get_write_position(store);
+    (*write_callback)(NULL, ptr, length);
     memory_stream_did_write(store, length);
+    return  length;
 }
 
 EMSCRIPTEN_KEEPALIVE
 void close_store()
 {
-   if (store) free_memory_stream(store);
+   if (store) memory_stream_free(&store);
 }
 
 /*************************************************/
@@ -84,16 +81,16 @@ typedef void (*StreamSelectedCallback)();
 static int io_read_packet(void *opaque, uint8_t *buffer, int buffer_size)
 {
     MemoryStream *ms = (MemoryStream *)opaque;
-    buffer_size = FFMIN(buffer_size, get_available_of_memory_stream(ms));
+    buffer_size = FFMIN(buffer_size, memory_stream_get_available(ms));
     if (!buffer_size) return AVERROR_EOF;
-    read_memory_stream(ms, buffer, buffer_size);
+    memory_stream_read(ms, buffer, buffer_size);
     return buffer_size;
 }
 
 static int64_t io_seek(void *opaque, int64_t offset, int whence)
 {
     MemoryStream *ms = (MemoryStream *)opaque;
-    return seek_memory_stream(ms, offset, whence);
+    return memory_stream_seek(ms, offset, whence);
 }
 
 static int find_best_stream_by_type(AVStream **stream, AVFormatContext *fmt_ctx, enum AVMediaType type)

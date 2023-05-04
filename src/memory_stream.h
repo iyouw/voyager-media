@@ -11,6 +11,8 @@
 
 typedef unsigned char uint8_t;
 
+typedef void (*MemoryStreamWriteCallback)(void *opaque, uint8_t *ptr, size_t buf_size);
+
 typedef struct MemoryStream
 {
   uint8_t *data;
@@ -19,32 +21,36 @@ typedef struct MemoryStream
   size_t capacity;
   size_t recycle_length;
   int is_stream;
+  int is_done;
 } MemoryStream;
 
-int create_memory_stream(MemoryStream **memory_stream, size_t capacity, int is_stream);
+int memory_stream_create(MemoryStream **memory_stream, size_t capacity, int is_stream);
 
-void free_memory_stream(MemoryStream *memory_stream);
+void memory_stream_free(MemoryStream **memory_stream);
 
-size_t get_free_of_memory_stream(MemoryStream *memory_stream);
+size_t memory_stream_get_free(MemoryStream *memory_stream);
 
-size_t get_available_of_memory_stream(MemoryStream *memory_stream);
+size_t memory_stream_get_available(MemoryStream *memory_stream);
 
-uint8_t *get_memory_stream_read_position_ptr(MemoryStream *memory_stream);
+uint8_t *memory_stream_get_read_position(MemoryStream *memory_stream);
 
-uint8_t *get_memory_stream_write_position_ptr(MemoryStream *memory_stream);
+uint8_t *memory_stream_get_write_position(MemoryStream *memory_stream);
 
-uint8_t *ensure_memory_stream_write(MemoryStream *memory_stream, size_t write_length);
+void memory_stream_is_done(MemoryStream *memory_stream, int is_done);
 
-void collect_memory_stream(MemoryStream *memory_stream);
+uint8_t *memory_stream_ensure_write(MemoryStream *memory_stream, size_t write_length);
 
-void resize_memory_stream(MemoryStream *memory_stream, size_t size);
+void memory_stream_collect(MemoryStream *memory_stream);
 
-size_t read_memory_stream(MemoryStream *memory_stream, uint8_t *buf, size_t buf_size);
+void memory_stream_resize(MemoryStream *memory_stream, size_t size);
 
-size_t write_memory_stream(MemoryStream *memory_stream, const uint8_t *buf, size_t buf_size);
-
-long seek_memory_stream(MemoryStream *memory_stream, long offset, int whence);
+size_t memory_stream_read(MemoryStream *memory_stream, uint8_t *buf, size_t buf_size);
 
 void memory_stream_did_write(MemoryStream *memory_stream, size_t write_length);
 
+size_t memory_stream_write(MemoryStream *memory_stream, const uint8_t *buf, size_t buf_size);
+
+size_t memory_stream_write_callback(MemoryStream *memory_stream, void *opaque, size_t buf_size, MemoryStreamWriteCallback callback);
+
+long memory_stream_seek(MemoryStream *memory_stream, long offset, int whence);
 #endif

@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -7,15 +6,13 @@
 #define READ_FILE_BUFFER_SIZE (7 * 1024)
 #define WRITE_FILE_BUFFER_SIZE (3 * 1024)
 
-typedef enum { TRUE, FALSE } Boolean;
-
 typedef struct 
 {
   const char *fileName;
   struct MemoryStream *const ms;
 } Context;
 
-Boolean isDone = FALSE;
+int isDone = 0;
 pthread_mutex_t mutex;
 
 static void *read_file_thread(void *args)
@@ -35,15 +32,15 @@ static void *read_file_thread(void *args)
     bytes_read = fread(buffer, sizeof(uint8_t), READ_FILE_BUFFER_SIZE, file);
     ret = pthread_mutex_lock(&mutex);
     if (ret != 0) goto fail;
-    write_memory_stream(ctx->ms, buffer, bytes_read);
+    memory_stream_write(ctx->ms, buffer, bytes_read);
     ret = pthread_mutex_unlock(&mutex);
     if (ret != 0) goto fail;
-    sleep(1);
   }
-
-  pthread_mutex_lock(&mutex);
-  isDone = TRUE;
-  pthread_mutex_unlock(&mutex);
+  memory_stream_is_done(ctx->ms, 1);
+  if((ret = fclose(file)) != 0)
+  {
+    perror("Could not close input file!\n");
+  }
 fail:
   pthread_exit(&ret);
 }
@@ -60,12 +57,12 @@ static void *write_file_thread(void *args)
   }
   uint8_t buffer[WRITE_FILE_BUFFER_SIZE];
   size_t bytes_read, bytes_write;
-  Boolean done;
+  int done;
   while(1) {
     ret = pthread_mutex_lock(&mutex);
     if (ret != 0) goto fail;
-    bytes_read = read_memory_stream(ctx->ms, buffer, WRITE_FILE_BUFFER_SIZE);
-    done = isDone;
+    bytes_read = memory_stream_read(ctx->ms, buffer, WRITE_FILE_BUFFER_SIZE);
+    done = ctx->ms->is_done;
     ret = pthread_mutex_unlock(&mutex);
     if (ret != 0) goto fail;
     bytes_write = fwrite(buffer, sizeof(uint8_t), bytes_read, file);
@@ -73,8 +70,11 @@ static void *write_file_thread(void *args)
       ret = 102;
       break;
     }
-    if (bytes_read < WRITE_FILE_BUFFER_SIZE && done == TRUE) goto fail;
-    sleep(1);
+    if (bytes_read < WRITE_FILE_BUFFER_SIZE && done) goto fail;
+  }
+  if ((ret = fclose(file)) != 0)
+  {
+    perror("Could not close output file!\n");
   }
 fail:
   pthread_exit(&ret);
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
   const char *in = argv[1];
   const char *out = argv[2];
   MemoryStream *ms;
-  if((ret = create_memory_stream(&ms, 1024)) != 0)
+  if((ret = memory_stream_create(&ms, 1024, 0)) != 0)
   {
     goto fail;
   }
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
     goto fail;
   }
 fail:
-  free_memory_stream(ms);
+  memory_stream_free(&ms);
   pthread_mutex_destroy(&mutex);
   return ret;
 }

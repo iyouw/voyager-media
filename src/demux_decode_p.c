@@ -180,7 +180,7 @@ static int load_media_thread()
   size_t bytes_read;
   while((bytes_read = fread(buffer, 1, buffer_size, file)) > 0)
   {
-    write_memory_stream(memory_stream, buffer, bytes_read); 
+    memory_stream_write(memory_stream, buffer, bytes_read); 
   }
   return 0;
 }
@@ -188,16 +188,16 @@ static int load_media_thread()
 static int read_io(void *opaque, uint8_t *buffer, int buffer_size)
 {
   MemoryStream *memory_stream = (MemoryStream *)opaque;
-  buffer_size = FFMIN(buffer_size, get_available_of_memory_stream(memory_stream));
+  buffer_size = FFMIN(buffer_size, memory_stream_get_available(memory_stream));
   if (!buffer_size) return AVERROR_EOF;
-  read_memory_stream(memory_stream, buffer, buffer_size);
+  memory_stream_read(memory_stream, buffer, buffer_size);
   return buffer_size;
 }
 
 static int64_t seek_io(void *opaque, int64_t offset, int whence)
 {
   MemoryStream *memory_stream = (MemoryStream *)opaque;
-  int ret = seek_memory_stream(memory_stream, offset, whence);
+  int ret = memory_stream_seek(memory_stream, offset, whence);
   return ret;
 }
 
@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
   video_dst_file_name = argv[2];
   audio_dst_file_name = argv[3];
 
-  create_memory_stream(&memory_stream, 1024, 0);
+  memory_stream_create(&memory_stream, 1024, 0);
   if (memory_stream == NULL)
   {
     fprintf(stderr, "Could not allocate memory_stream\n");

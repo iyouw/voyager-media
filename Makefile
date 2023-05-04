@@ -9,7 +9,7 @@ avio:
 avio_r:
 	${MAKE} $@ --directory=$(SRC)
 
-demux_decode:
+demux_decode_r:
 	$(MAKE) $@ --directory=$(SRC)
 
 demux_decode_p:
@@ -21,7 +21,7 @@ demux_decode_w_r:
 transcode:
 	$(MAKE) $@ --directory=$(SRC)
 
-demux_decode_w:
+demux_decode:
 	$(MAKE) $@ --directory=$(SRC)
 
 clean:

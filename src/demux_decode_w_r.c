@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <pthread.h>
 
 #include <libavutil/avutil.h>
@@ -17,12 +16,11 @@
 typedef void (*VideoFrameParsedCallback)(uint8_t *ptr, long size);
 typedef void (*AudioFrameParsedCallback)(uint8_t *ptr, long size);
 
-typedef enum { TRUE, FALSE } Boolean;
-
 // avio
 static uint8_t *io_buffer;
 static AVIOContext *io_ctx;
 static MemoryStream *store;
+
 // format & decode
 static AVPacket *pkt;
 static AVFrame *frame;
@@ -40,55 +38,76 @@ static enum AVPixelFormat pix_fmt;
 
 static pthread_t demux_decode_t;
 static pthread_mutex_t mutex;
-static pthread_cond_t read_cond;
+static pthread_cond_t cond;
+
 static VideoFrameParsedCallback fireVideoFrameParsed = NULL;
 static AudioFrameParsedCallback fireAudioFrameParsed = NULL;
-static Boolean opened = FALSE;
+
+static int opened = 0;
 
 /*************************************************/
 /*** internal section ****************************/
 /*************************************************/
-static int read_store(void *opaque, uint8_t *buffer, int buffer_size)
+static int read_file_store(void *opaque, uint8_t *buffer, int buffer_size)
 {
-  int ret = 0;
-  if ((ret = pthread_mutex_lock(&mutex)) != 0)
+  MemoryStream *ms = opaque;
+
+  if (pthread_mutex_lock(&mutex) != 0)
   {
     fprintf(stderr, "Failed to lock muted\n");
-    return 0;
+    return AVERROR(EINVAL);
   }
-  MemoryStream *ms = opaque;
-  if (!ms->is_stream)
+
+  if (!ms->is_done)
   {
-    if ((ret = pthread_cond_wait(&read_cond, &mutex)) != 0)
+    if (pthread_cond_wait(&cond, &mutex) != 0)
     {
-      fprintf(stderr, "Failed to wait cond!\n");
+      fprintf(stderr, "Could not wait cond!\n");
+      return AVERROR(EINVAL);
     }
-    if (pthread_mutex_unlock(&mutex) != 0)
-    {
-      fprintf(stderr, "Failed to unlock mutex!\n");
-      return 0;
-    }
-    return 0;
   }
-  buffer_size = FFMIN(buffer_size, get_available_of_memory_stream(ms));
+  buffer_size = FFMIN(buffer_size, memory_stream_get_available(ms));
   if (buffer_size == 0)
   {
-    if ((ret = pthread_cond_wait(&read_cond, &mutex)) != 0)
-    {
-      fprintf(stderr, "Failed to wait cond!\n");
-    }
-    if (pthread_mutex_unlock(&mutex) != 0)
-    {
-      fprintf(stderr, "Failed to unlock mutex!\n");
-      return 0;
-    }
-    return 0;
+    return AVERROR_EOF;
   }
-  ret = read_memory_stream(ms, buffer, buffer_size);
+  int bytes_read = memory_stream_read(ms, buffer, buffer_size);
   if (pthread_mutex_unlock(&mutex) != 0)
   {
     fprintf(stderr, "Failed to unlock mutex!\n");
-    return 0;
+    return AVERROR(EINVAL);
+  }
+  return bytes_read;
+}
+
+static int read_stream_store(void *opaque, uint8_t *buffer, int buffer_size)
+{
+  int ret;
+  MemoryStream *ms = opaque;
+
+  if (pthread_mutex_lock(&mutex) != 0)
+  {
+    fprintf(stderr, "Failed to lock muted\n");
+    return AVERROR(EINVAL);
+  }
+  buffer_size = FFMIN(buffer_size, memory_stream_get_available(ms));
+  if (buffer_size == 0)
+  {
+    if (pthread_cond_wait(&cond, &mutex) != 0)
+    {
+      fprintf(stderr, "Could not wait cond!\n");
+      return AVERROR(EINVAL);
+    }
+    ret = 0;
+  }
+  else
+  {
+    ret = memory_stream_read(ms, buffer, buffer_size);
+  }
+  if (pthread_mutex_unlock(&mutex) != 0)
+  {
+    fprintf(stderr, "Failed to unlock mutex!\n");
+    return AVERROR(EINVAL);
   }
   return ret;
 }
@@ -100,13 +119,13 @@ static int64_t seek_store(void *opaque, int64_t offset, int whence)
   if ((ret = pthread_mutex_lock(&mutex)) != 0)
   {
     fprintf(stderr, "Failed to lock mutex!\n");
-    return -1;
+    return AVERROR(EINVAL);
   }
-  ret = seek_memory_stream(ms, offset, whence);
+  ret = memory_stream_seek(ms, offset, whence);
   if (pthread_mutex_unlock(&mutex) != 0)
   {
     fprintf(stderr, "Failed to unlock mutex!\n");
-    return -1;
+    return AVERROR(EINVAL);
   }
   return ret;
 }
@@ -217,7 +236,10 @@ static void *demux_decode(void *arg)
     goto end;
   }
 
-  if (!(io_ctx = avio_alloc_context(io_buffer,IO_BUFFER_SIZE,0,store,&read_store,NULL,&seek_store)))
+  if (!(io_ctx = avio_alloc_context(io_buffer, IO_BUFFER_SIZE, 0, store,
+    store->is_stream ? &read_stream_store:&read_file_store, 
+    NULL, 
+    store->is_stream ? NULL : &seek_store)))
   {
     fprintf(stderr, "Could not allocate io context!\n");
     ret = AVERROR(ENOMEM);
@@ -286,7 +308,7 @@ static void *demux_decode(void *arg)
 
   while(av_read_frame(fmt_ctx, pkt) >=0)
   {
-    if (opened == FALSE)
+    if (!opened)
     {
       av_packet_unref(pkt);
       goto end;
@@ -311,9 +333,9 @@ end:
   av_packet_free(&pkt);
   av_frame_free(&frame);
   av_free(video_frame_data[0]);
-  free_memory_stream(store);
+  memory_stream_free(&store);
   pthread_mutex_destroy(&mutex);
-  pthread_cond_destroy(&read_cond);
+  pthread_cond_destroy(&cond);
   pthread_exit(NULL);
   return NULL;
 }
@@ -326,13 +348,12 @@ void hello_wasm()
   printf("hello webassembly from transcode for web media\n");
 }
 
-int open_dd(VideoFrameParsedCallback on_video_frame_parsed, AudioFrameParsedCallback on_audio_frame_parsed)
+int open_dd(int is_stream, VideoFrameParsedCallback on_video_frame_parsed, AudioFrameParsedCallback on_audio_frame_parsed)
 {
   int ret;
-  if (opened == TRUE) return 0;
+  if (opened) return 0;
 
-  opened = TRUE;
-
+  opened = 1;
   fireVideoFrameParsed = on_video_frame_parsed;
   fireAudioFrameParsed = on_audio_frame_parsed;
 
@@ -341,18 +362,16 @@ int open_dd(VideoFrameParsedCallback on_video_frame_parsed, AudioFrameParsedCall
     fprintf(stderr, "Could not init mutex!\n");
     return ret;
   }
-
-  if ((ret = pthread_cond_init(&read_cond, NULL)) != 0)
+  if ((ret = pthread_cond_init(&cond, NULL)) != 0)
   {
-    fprintf(stderr, "Could not init read cond!\n");
+    fprintf(stderr, "Could not init cond!\n");
     return ret;
   }
-
   // memory stream
-  if ((ret = create_memory_stream(&store, STORE_SIZE, 0)) != 0)
+  if ((ret = memory_stream_create(&store, STORE_SIZE, is_stream)) != 0)
   {
     fprintf(stderr, "Could not aloocate store!\n");
-    return AVERROR(ENOMEM);
+    return ret;
   }
 
   // create thread
@@ -365,21 +384,15 @@ int open_dd(VideoFrameParsedCallback on_video_frame_parsed, AudioFrameParsedCall
   return 0;
 }
 
-uint8_t *ensure_write_data_size_of_dd(long size)
+int write_dd(void *opaque, size_t length, MemoryStreamWriteCallback did_write)
 {
   int ret;
   if ((ret = pthread_mutex_lock(&mutex)) != 0)
   {
     fprintf(stderr, "Could not lock mutex!\n");
-    return NULL;
+    return ret;
   }
-  return ensure_memory_stream_write(store, size);
-}
-
-int did_write_data_to_dd(long size)
-{
-  int ret;
-  memory_stream_did_write(store, size);
+  memory_stream_write_callback(store, opaque, length, did_write);
   if ((ret = pthread_mutex_unlock(&mutex)) != 0)
   {
     fprintf(stderr, "Could not unlock mutex!\n");
@@ -387,32 +400,31 @@ int did_write_data_to_dd(long size)
   }
   if (store->is_stream)
   {
-    if ((ret = pthread_cond_signal(&read_cond)) != 0)
+    if ((ret = pthread_cond_signal(&cond)) != 0)
     {
-      fprintf(stderr, "Could not signal cond!\n");
+      fprintf(stderr, "Could signal cond!\n");
       return ret;
     }
   }
   return 0;
 }
 
-
-int end_data()
+void write_is_done()
 {
-  int ret;
-  if ((ret = pthread_cond_signal(&read_cond)) != 0)
+  store->is_done = 1;
+  if (!store->is_stream)
   {
-    fprintf(stderr, "Could not signal cond!\n");
-    return ret;
-  }
-  return 0;
+    pthread_cond_signal(&cond);
+  } 
 }
 
 int close_dd()
 {
-  opened = FALSE;
+  // pthread_cancel()
+  opened = 0;
   return 0;
 }
+
 
 
 /*************************************************/
@@ -424,12 +436,18 @@ static long audio_frame_count = 0;
 
 void video_callback(uint8_t *ptr, long size)
 {
-  printf("video frame: %ld!", ++video_frame_count);
+  printf("video frame: %ld!\n", ++video_frame_count);
 }
 
 void audio_callback(uint8_t *ptr, long size)
 {
-  printf("audio frame: %ld!", ++audio_frame_count);
+  printf("audio frame: %ld!\n", ++audio_frame_count);
+}
+
+void write_memory_stream_callback(void *opaque, uint8_t *pos, size_t length)
+{
+  uint8_t *buffer = opaque;
+  memcpy(pos, buffer, length);
 }
 
 int main(int argc, const char *argv[])
@@ -451,7 +469,7 @@ int main(int argc, const char *argv[])
   FILE *file = fopen(file_name, "rb");
   int bytes_read;
 
-  if ((ret = open_dd(&video_callback, &audio_callback)) != 0)
+  if ((ret = open_dd(0, &video_callback, &audio_callback)) != 0)
   {
     fprintf(stderr, "Failed to open dd\n");
     close_dd();
@@ -460,11 +478,9 @@ int main(int argc, const char *argv[])
   while(!feof(file))
   {
     bytes_read = fread(buffer, 1, size, file);
-    ensure_write_data_size_of_dd(bytes_read);
-    uint8_t *pos = get_memory_stream_write_position_ptr(store);
-    memcpy(pos, buffer, bytes_read);
-    did_write_data_to_dd(bytes_read);
+    write_dd(buffer, bytes_read, &write_memory_stream_callback);
   }
-  
+
+  write_is_done();
   pthread_join(demux_decode_t, NULL);
 }

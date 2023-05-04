@@ -18,38 +18,38 @@ typedef void (*VideoFrameParsedCallback)(uint8_t *ptr, long size);
 typedef void (*AudioFrameParsedCallback)(uint8_t *ptr, long size);
 
 // avio
-uint8_t *io_buffer;
-AVIOContext *io_ctx;
-MemoryStream *store;
+static uint8_t *io_buffer;
+static AVIOContext *io_ctx;
+static MemoryStream *store;
 
 // format & decode
-AVPacket *pkt;
-AVFrame *frame;
-AVStream *video_stream;
-AVStream *audio_stream;
+static AVPacket *pkt;
+static AVFrame *frame;
+static AVStream *video_stream;
+static AVStream *audio_stream;
 
-AVFormatContext *fmt_ctx;
-AVCodecContext *video_dec_ctx;
-AVCodecContext *audio_dec_ctx;
+static AVFormatContext *fmt_ctx;
+static AVCodecContext *video_dec_ctx;
+static AVCodecContext *audio_dec_ctx;
 
-uint8_t * video_frame_data[4] = { NULL };
-int video_frame_line_size[4];
-long video_frame_size;
-enum AVPixelFormat pix_fmt;
+static uint8_t * video_frame_data[4] = { NULL };
+static int video_frame_line_size[4];
+static long video_frame_size;
+static enum AVPixelFormat pix_fmt;
 
-pthread_t demux_decode_t;
-pthread_mutex_t mutex;
-pthread_cond_t cond;
+static pthread_t demux_decode_t;
+static pthread_mutex_t mutex;
+static pthread_cond_t cond;
 
-VideoFrameParsedCallback fireVideoFrameParsed = NULL;
-AudioFrameParsedCallback fireAudioFrameParsed = NULL;
+static VideoFrameParsedCallback fireVideoFrameParsed = NULL;
+static AudioFrameParsedCallback fireAudioFrameParsed = NULL;
 
-int opened = 0;
+static int opened = 0;
 
 /*************************************************/
 /*** internal section ****************************/
 /*************************************************/
-int read_file_store(void *opaque, uint8_t *buffer, int buffer_size)
+static int read_file_store(void *opaque, uint8_t *buffer, int buffer_size)
 {
   MemoryStream *ms = opaque;
 
@@ -81,7 +81,7 @@ int read_file_store(void *opaque, uint8_t *buffer, int buffer_size)
   return bytes_read;
 }
 
-int read_stream_store(void *opaque, uint8_t *buffer, int buffer_size)
+static int read_stream_store(void *opaque, uint8_t *buffer, int buffer_size)
 {
   int ret;
   MemoryStream *ms = opaque;
@@ -113,7 +113,7 @@ int read_stream_store(void *opaque, uint8_t *buffer, int buffer_size)
   return ret;
 }
 
-int64_t seek_store(void *opaque, int64_t offset, int whence)
+static int64_t seek_store(void *opaque, int64_t offset, int whence)
 {
   int ret = 0;
   MemoryStream *ms = opaque;
@@ -131,7 +131,7 @@ int64_t seek_store(void *opaque, int64_t offset, int whence)
   return ret;
 }
 
-int open_codec_context(AVCodecContext **dec_ctx, AVStream **stream, AVFormatContext *fmt_ctx, enum AVMediaType type)
+static int open_codec_context(AVCodecContext **dec_ctx, AVStream **stream, AVFormatContext *fmt_ctx, enum AVMediaType type)
 {
   int ret;
   AVStream *st;
@@ -175,7 +175,7 @@ int open_codec_context(AVCodecContext **dec_ctx, AVStream **stream, AVFormatCont
   return 0;
 }
 
-int output_video_frame(AVFrame *frame)
+static int output_video_frame(AVFrame *frame)
 {
   av_image_copy(video_frame_data, video_frame_line_size, 
                 (const uint8_t **)(frame->data), frame->linesize, 
@@ -184,14 +184,15 @@ int output_video_frame(AVFrame *frame)
   return 0;
 }
 
-int output_audio_frame(AVFrame *frame)
+static int output_audio_frame(AVFrame *frame)
 {
   size_t unpadded_linesize = frame->nb_samples * av_get_bytes_per_sample(frame->format);
+
   fireAudioFrameParsed(frame->extended_data[0], unpadded_linesize);
   return 0;
 }
 
-int decode_packet(AVCodecContext *ctx, AVPacket *pkt)
+static int decode_packet(AVCodecContext *ctx, AVPacket *pkt)
 {
   int ret = 0;
   
@@ -226,7 +227,7 @@ int decode_packet(AVCodecContext *ctx, AVPacket *pkt)
   return 0;
 }
 
-void *demux_decode(void *arg)
+static void *demux_decode(void *arg)
 {
   int ret;
   // avio
@@ -347,7 +348,7 @@ end:
 EMSCRIPTEN_KEEPALIVE
 void hello_wasm()
 {
-  printf("hello webassembly from transcode for web media\n");
+  printf("hello webassembly from demux decode for web media\n");
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -428,6 +429,10 @@ EMSCRIPTEN_KEEPALIVE
 int close_dd()
 {
   // pthread_cancel()
-  opened = 0;
+  // opened = 0;
+  if (pthread_join(demux_decode_t, NULL) != 0)
+  {
+    perror("Failed to wait demux decode thread join!\n");
+  }
   return 0;
 }

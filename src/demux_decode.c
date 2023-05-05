@@ -41,8 +41,8 @@ static pthread_t demux_decode_t;
 static pthread_mutex_t mutex;
 static pthread_cond_t cond;
 
-static VideoFrameParsedCallback fireVideoFrameParsed = NULL;
-static AudioFrameParsedCallback fireAudioFrameParsed = NULL;
+static VideoFrameParsedCallback fireVideoFrameParsed;
+static AudioFrameParsedCallback fireAudioFrameParsed;
 
 static int opened = 0;
 
@@ -181,6 +181,7 @@ static int output_video_frame(AVFrame *frame)
                 (const uint8_t **)(frame->data), frame->linesize, 
                 pix_fmt, frame->width, frame->height);
   fireVideoFrameParsed(video_frame_data[0], video_frame_size);
+  printf("output video\n");
   return 0;
 }
 
@@ -189,6 +190,7 @@ static int output_audio_frame(AVFrame *frame)
   size_t unpadded_linesize = frame->nb_samples * av_get_bytes_per_sample(frame->format);
 
   fireAudioFrameParsed(frame->extended_data[0], unpadded_linesize);
+  printf("output audio\n");
   return 0;
 }
 
@@ -338,6 +340,7 @@ end:
   memory_stream_free(&store);
   pthread_mutex_destroy(&mutex);
   pthread_cond_destroy(&cond);
+  opened = 0;
   pthread_exit(NULL);
   return NULL;
 }
@@ -428,11 +431,6 @@ void write_is_done()
 EMSCRIPTEN_KEEPALIVE
 int close_dd()
 {
-  // pthread_cancel()
-  // opened = 0;
-  if (pthread_join(demux_decode_t, NULL) != 0)
-  {
-    perror("Failed to wait demux decode thread join!\n");
-  }
+  opened = 0;
   return 0;
 }

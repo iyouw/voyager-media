@@ -35,6 +35,16 @@
             "type": "node"
         },
         {
+            "name": "multi_thread_test",
+            "program": "${file}",
+            "request": "launch",
+            "cwd": "${fileDirname}",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
             "name": "demux_decode_w_r",
             "type": "cppdbg",
             "request": "launch",

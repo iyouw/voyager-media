@@ -53,10 +53,10 @@ EMCC_CFALGS += -sEXPORT_NAME=fft
 EMCC_CFALGS += -sEXPORTED_RUNTIME_METHODS=addFunction,UTF8ToString,stringToUTF8,writeArrayToMemory
 
 EMCC_LDFLAGS += -L../lib_wasm
-EMCC_LDFLAGS += -lavformat
-EMCC_LDFLAGS += -lavcodec
-EMCC_LDFLAGS += -lavutil
-EMCC_LDFLAGS += -lswresample
+EMCC_LDFLAGS += -lavformat -lm
+EMCC_LDFLAGS += -lavcodec -pthread -lm
+EMCC_LDFLAGS += -lavutil -pthread -lm
+EMCC_LDFLAGS += -lswresample -lm
 
 main: main.o memory_stream.o
 	$(CC) -o $@ $^ -lm -lpthread
@@ -90,6 +90,9 @@ transcode: transcode.c memory_stream.c memory_stream.h
 
 demux_decode: demux_decode.c memory_stream.c memory_stream.h
 	$(EMCC) $(EMCC_INCLUDE) $(EMCC_CFALGS) -o demux_decode.js demux_decode.c memory_stream.c $(EMCC_LDFLAGS)
+
+multi_thread: multi_thread.c
+	$(EMCC) $(EMCC_INCLUDE) $(EMCC_CFALGS) -o multi_thread.js multi_thread.c -lpthread
 
 clean:
 	-rm -f main avio avio_r demux_decode demux_decode_p demux_decode_w demux_decode_w_r *.o *.wasm *.js

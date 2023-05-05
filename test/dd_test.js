@@ -55,7 +55,6 @@ ffmpeg().then(async (instance)=>{
       if (bytesRead == 0)
       {
         instance._write_is_done();
-        instance._close_dd();
         return;
       }
       b = buffer.subarray(0, bytesRead);
@@ -64,4 +63,6 @@ ffmpeg().then(async (instance)=>{
     }, 100)
   }
   feedData();
+
+  setInterval(()=>console.log('remain main thread'), 1000);
 });

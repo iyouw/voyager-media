@@ -24,5 +24,8 @@ transcode:
 demux_decode:
 	$(MAKE) $@ --directory=$(SRC)
 
+multi_thread:
+	$(MAKE) $@ --directory=$(SRC)
+
 clean:
 	${MAKE} $@ --directory=$(SRC)

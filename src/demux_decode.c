@@ -20,9 +20,11 @@
 typedef struct CallbackContext {
   uint8_t *ptr;
   long size;
+  long width;
+  long height;
 } CallbackContext;
 
-typedef void (*VideoFrameParsedCallback)(uint8_t *ptr, long size);
+typedef void (*VideoFrameParsedCallback)(uint8_t *ptr, long size, long width, long height);
 typedef void (*AudioFrameParsedCallback)(uint8_t *ptr, long size);
 
 // avio
@@ -63,7 +65,7 @@ static em_proxying_queue *proxy_queue = NULL;
 static void invokeVideoFrameParsedCallback(void *arg)
 {
   CallbackContext *ctx = (CallbackContext *)arg;
-  (*fireVideoFrameParsed)(ctx->ptr, ctx->size);
+  (*fireVideoFrameParsed)(ctx->ptr, ctx->size, ctx->width, ctx->height);
 }
 
 static void invokeAudioFrameParsedCallback(void *arg)
@@ -209,6 +211,8 @@ static int output_video_frame(AVFrame *frame)
   CallbackContext ctx = {
     .ptr = video_frame_data[0],
     .size = video_frame_size,
+    .width = frame->width,
+    .height = frame->height,
   };
   emscripten_proxy_sync(proxy_queue, main, &invokeVideoFrameParsedCallback, &ctx);
   printf("output video\n");

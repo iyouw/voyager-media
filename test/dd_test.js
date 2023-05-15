@@ -17,8 +17,9 @@ ffmpeg().then(async (instance)=>{
   let vf = 0;
   let af = 0;
   
-  const onOutputVideoFrame = (pos, size) => {
+  const onOutputVideoFrame = (pos, size, width, height) => {
     console.log(`video_frames:${vf++},size:${size}`);
+    console.log(`${width}x${height}`);
     const view = instance.HEAPU8;
     const buffer = view.subarray(pos, pos + size);
     appendFileSync(video_output_file, buffer);
@@ -31,7 +32,7 @@ ffmpeg().then(async (instance)=>{
     appendFileSync(audio_output_file, buffer);
   }
 
-  const onOutputVideoFrameCallback = instance.addFunction(onOutputVideoFrame, 'vii');
+  const onOutputVideoFrameCallback = instance.addFunction(onOutputVideoFrame, 'viiii');
   const onOutputAudioFrameCallback = instance.addFunction(onOutputAudioFrame, 'vii');
 
   // open demux_decode

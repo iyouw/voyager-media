@@ -2,17 +2,25 @@
 #include <stdio.h>
 #include <pthread.h>
 
+#include <emscripten.h>
+#include <emscripten/proxying.h>
+
 #include <libavutil/avutil.h>
 #include <libavutil/imgutils.h>
 #include <libavformat/avio.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 
-#include "emscripten.h"
+
 #include "memory_stream.h"
 
 #define IO_BUFFER_SIZE (MEMORY_PAGE * 3)
 #define STORE_SIZE (MEMORY_PAGE * 10)
+
+typedef struct CallbackContext {
+  uint8_t *ptr;
+  long size;
+} CallbackContext;
 
 typedef void (*VideoFrameParsedCallback)(uint8_t *ptr, long size);
 typedef void (*AudioFrameParsedCallback)(uint8_t *ptr, long size);
@@ -37,14 +45,32 @@ static int video_frame_line_size[4];
 static long video_frame_size;
 static enum AVPixelFormat pix_fmt;
 
-static pthread_t demux_decode_t;
-static pthread_mutex_t mutex;
-static pthread_cond_t cond;
+static pthread_t demux_decode_main;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 static VideoFrameParsedCallback fireVideoFrameParsed;
 static AudioFrameParsedCallback fireAudioFrameParsed;
 
 static int opened = 0;
+
+static pthread_t main;
+static em_proxying_queue *proxy_queue = NULL;
+
+/*************************************************/
+/*** callback section ****************************/
+/*************************************************/
+static void invokeVideoFrameParsedCallback(void *arg)
+{
+  CallbackContext *ctx = (CallbackContext *)arg;
+  (*fireVideoFrameParsed)(ctx->ptr, ctx->size);
+}
+
+static void invokeAudioFrameParsedCallback(void *arg)
+{
+  CallbackContext *ctx = (CallbackContext *)arg;
+  (*fireAudioFrameParsed)(ctx->ptr, ctx->size);
+}
 
 /*************************************************/
 /*** internal section ****************************/
@@ -180,7 +206,11 @@ static int output_video_frame(AVFrame *frame)
   av_image_copy(video_frame_data, video_frame_line_size, 
                 (const uint8_t **)(frame->data), frame->linesize, 
                 pix_fmt, frame->width, frame->height);
-  fireVideoFrameParsed(video_frame_data[0], video_frame_size);
+  CallbackContext ctx = {
+    .ptr = video_frame_data[0],
+    .size = video_frame_size,
+  };
+  emscripten_proxy_sync(proxy_queue, main, &invokeVideoFrameParsedCallback, &ctx);
   printf("output video\n");
   return 0;
 }
@@ -188,8 +218,11 @@ static int output_video_frame(AVFrame *frame)
 static int output_audio_frame(AVFrame *frame)
 {
   size_t unpadded_linesize = frame->nb_samples * av_get_bytes_per_sample(frame->format);
-
-  fireAudioFrameParsed(frame->extended_data[0], unpadded_linesize);
+  CallbackContext ctx = {
+    .ptr = frame->extended_data[0],
+    .size = unpadded_linesize,
+  };
+  emscripten_proxy_sync(proxy_queue, main, &invokeAudioFrameParsedCallback, &ctx);
   printf("output audio\n");
   return 0;
 }
@@ -365,16 +398,9 @@ int open_dd(int is_stream, VideoFrameParsedCallback on_video_frame_parsed, Audio
   fireVideoFrameParsed = on_video_frame_parsed;
   fireAudioFrameParsed = on_audio_frame_parsed;
 
-  if ((ret = pthread_mutex_init(&mutex, NULL)) != 0)
-  {
-    fprintf(stderr, "Could not init mutex!\n");
-    return ret;
-  }
-  if ((ret = pthread_cond_init(&cond, NULL)) != 0)
-  {
-    fprintf(stderr, "Could not init cond!\n");
-    return ret;
-  }
+  main = pthread_self();
+  proxy_queue = em_proxying_queue_create();
+
   // memory stream
   if ((ret = memory_stream_create(&store, STORE_SIZE, is_stream)) != 0)
   {
@@ -383,7 +409,7 @@ int open_dd(int is_stream, VideoFrameParsedCallback on_video_frame_parsed, Audio
   }
 
   // create thread
-  if ((ret = pthread_create(&demux_decode_t, NULL, &demux_decode, NULL)) != 0)
+  if ((ret = pthread_create(&demux_decode_main, NULL, &demux_decode, NULL)) != 0)
   {
     fprintf(stderr, "Could not open demux decode thread\n!");
     return ret;

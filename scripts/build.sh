@@ -1,4 +1,8 @@
 #!/bin/bash -x
+SRC=$1
+DEST=$2
+
+cd $SRC
 
 # verify emscripten version
 emcc -v
